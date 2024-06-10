@@ -118,6 +118,16 @@ data:
         {{- end }}
       {{- end }}
 
+      authorization:
+        jwtKeyProvider:
+          keySourceURIs:
+          - https://public-bucket-verse-dev.s3.eu-west-1.amazonaws.com/staging-temporal-jwks.json
+          - https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_elX5EX9Zq/.well-known/jwks.json
+          refreshInterval: 1m
+        authorizer: default
+        claimMapper: default
+        permissionsClaimName: "cognito:groups"
+        
     services:
       frontend:
         rpc:
