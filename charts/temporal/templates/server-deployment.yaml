@@ -1,17 +1,22 @@
 {{- if $.Values.server.enabled }}
 {{- range $service := (list "frontend" "history" "matching" "worker") }}
 {{- $serviceValues := index $.Values.server $service -}}
+{{- $components := (list $service) }}
+{{- if eq $service "frontend" }}
+{{- $components = (list "frontend" "frontend-internal") }}
+{{- end }}
+{{- range $component := $components }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "temporal.componentname" (list $ $service) }}
+  name: {{ include "temporal.componentname" (list $ $component) }}
   labels:
     app.kubernetes.io/name: {{ include "temporal.name" $ }}
     helm.sh/chart: {{ include "temporal.chart" $ }}
     app.kubernetes.io/managed-by: {{ $.Release.Service }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
     app.kubernetes.io/version: {{ $.Chart.AppVersion | replace "+" "_" }}
-    app.kubernetes.io/component: {{ $service }}
+    app.kubernetes.io/component: {{ $component }}
     app.kubernetes.io/part-of: {{ $.Chart.Name }}
 spec:
   replicas: {{ default $.Values.server.replicaCount $serviceValues.replicaCount }}
@@ -19,7 +24,7 @@ spec:
     matchLabels:
       app.kubernetes.io/name: {{ include "temporal.name" $ }}
       app.kubernetes.io/instance: {{ $.Release.Name }}
-      app.kubernetes.io/component: {{ $service }}
+      app.kubernetes.io/component: {{ $component }}
   template:
     metadata:
       labels:
@@ -28,7 +33,7 @@ spec:
         app.kubernetes.io/managed-by: {{ $.Release.Service }}
         app.kubernetes.io/instance: {{ $.Release.Name }}
         app.kubernetes.io/version: {{ $.Chart.AppVersion | replace "+" "_" }}
-        app.kubernetes.io/component: {{ $service }}
+        app.kubernetes.io/component: {{ $component }}
         app.kubernetes.io/part-of: {{ $.Chart.Name }}
         {{- with (default $.Values.server.podLabels $serviceValues.podLabels) }}
         {{- toYaml . | nindent 8 }}
@@ -36,7 +41,7 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/server-configmap.yaml") $ | sha256sum }}
         {{- if (default $.Values.server.metrics.annotations.enabled $serviceValues.metrics.annotations.enabled) }}
-        prometheus.io/job: {{ $.Chart.Name }}-{{ $service }}
+        prometheus.io/job: {{ $.Chart.Name }}-{{ $component }}
         prometheus.io/scrape: 'true'
         prometheus.io/port: '9090'
         {{- end }}
@@ -155,7 +160,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: "{{ include "temporal.componentname" (list $ $service) }}-config"
+            name: "{{ include "temporal.componentname" (list $ $component) }}-config"
         - name: dynamic-config
           configMap:
             name: "{{ include "temporal.fullname" $ }}-dynamic-config"
@@ -182,5 +187,6 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
 ---
+{{- end }}
 {{- end }}
 {{- end }}

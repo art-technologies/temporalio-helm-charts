@@ -1,5 +1,5 @@
 {{- if $.Values.server.enabled }}
-{{- range $service := (list "frontend" "history" "matching" "worker") }}
+{{- range $service := (list "frontend" "history" "matching" "worker" "frontend-internal") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -118,6 +118,7 @@ data:
         {{- end }}
       {{- end }}
 
+      {{- if ne $service "frontend-internal" }}
       authorization:
         jwtKeyProvider:
           keySourceURIs:
@@ -127,7 +128,8 @@ data:
         authorizer: default
         claimMapper: default
         permissionsClaimName: "cognito:groups"
-        
+      {{- end }}
+
     services:
       frontend:
         rpc:
@@ -203,7 +205,7 @@ data:
     {{- end }}
 
     publicClient:
-      hostPort: "{{ include "temporal.componentname" (list $ "frontend") }}:{{ $.Values.server.frontend.service.port }}"
+      hostPort: "{{ include "temporal.componentname" (list $ "frontend-internal") }}:{{ $.Values.server.frontend.service.port }}"
 
     dynamicConfigClient:
       filepath: "/etc/temporal/dynamic_config/dynamic_config.yaml"
